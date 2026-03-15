@@ -24,7 +24,12 @@
   - 已增加结构化建议约束：`StructuredAdvice` + `StructuredAdviceValidator`
   - `analyze` 已按结构化对象生成并校验后返回
   - 测试通过，确认连续回合时检索轨迹可落库并可查询
-- 下一步：进入 M3（可观测与回放）
+- M3 已完成：
+  - 已提供回放接口 `GET /api/v1/games/{gameId}/replay`，可按回合查看 state/diff/memory/retrieval/advice
+  - 已提供质量指标接口 `GET /api/v1/metrics/quality`（识别率、低置信度比例、建议稳定性、P50/P95 延迟）
+  - `analyze` 已接入低置信度兜底策略（阈值 0.68），低置信度时返回保守建议并显式不确定性
+  - 已补充 M3 测试并通过
+- 下一步：M4 体验收敛与真实视觉/知识数据接入
 
 ---
 

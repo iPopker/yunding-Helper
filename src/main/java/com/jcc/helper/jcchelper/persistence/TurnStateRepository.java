@@ -4,6 +4,7 @@ import com.jcc.helper.jcchelper.domain.GameState;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -72,6 +73,34 @@ public class TurnStateRepository {
                             rs.getDouble("state_confidence")
                     ));
                 },
+                gameId
+        );
+    }
+
+    public List<GameState> findByGameId(String gameId) {
+        return jdbcTemplate.query("""
+                        SELECT game_id, turn_index, stage, gold, level, hp,
+                               shop_units_json, items_json, board_units_json, bench_units_json, augments_json,
+                               observation_confidence, state_confidence
+                        FROM turn_state
+                        WHERE game_id = ?
+                        ORDER BY turn_index ASC
+                        """,
+                (rs, rowNum) -> new GameState(
+                        rs.getString("game_id"),
+                        rs.getInt("turn_index"),
+                        rs.getString("stage"),
+                        rs.getInt("gold"),
+                        rs.getInt("level"),
+                        rs.getInt("hp"),
+                        jsonCodec.toStringList(rs.getString("shop_units_json")),
+                        jsonCodec.toStringList(rs.getString("items_json")),
+                        jsonCodec.toStringList(rs.getString("board_units_json")),
+                        jsonCodec.toStringList(rs.getString("bench_units_json")),
+                        jsonCodec.toStringList(rs.getString("augments_json")),
+                        rs.getDouble("observation_confidence"),
+                        rs.getDouble("state_confidence")
+                ),
                 gameId
         );
     }

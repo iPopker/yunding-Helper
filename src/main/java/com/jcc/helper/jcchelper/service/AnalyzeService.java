@@ -15,6 +15,7 @@ import com.jcc.helper.jcchelper.persistence.TurnStateRepository;
 import com.jcc.helper.jcchelper.service.advice.AdviceComposer;
 import com.jcc.helper.jcchelper.service.advice.StructuredAdvice;
 import com.jcc.helper.jcchelper.service.advice.StructuredAdviceValidator;
+import com.jcc.helper.jcchelper.service.metrics.QualityMetricsService;
 import com.jcc.helper.jcchelper.service.rag.KnowledgeRetriever;
 import com.jcc.helper.jcchelper.service.rag.QueryPlanner;
 import com.jcc.helper.jcchelper.service.state.MemoryEngine;
@@ -41,6 +42,7 @@ public class AnalyzeService {
     private final RetrievalTraceRepository retrievalTraceRepository;
     private final AdviceComposer adviceComposer;
     private final StructuredAdviceValidator structuredAdviceValidator;
+    private final QualityMetricsService qualityMetricsService;
     private final AdviceTraceRepository adviceTraceRepository;
 
     public AnalyzeService(VisionAdapter visionAdapter,
@@ -55,6 +57,7 @@ public class AnalyzeService {
                           RetrievalTraceRepository retrievalTraceRepository,
                           AdviceComposer adviceComposer,
                           StructuredAdviceValidator structuredAdviceValidator,
+                          QualityMetricsService qualityMetricsService,
                           AdviceTraceRepository adviceTraceRepository) {
         this.visionAdapter = visionAdapter;
         this.gameSessionRepository = gameSessionRepository;
@@ -68,11 +71,13 @@ public class AnalyzeService {
         this.retrievalTraceRepository = retrievalTraceRepository;
         this.adviceComposer = adviceComposer;
         this.structuredAdviceValidator = structuredAdviceValidator;
+        this.qualityMetricsService = qualityMetricsService;
         this.adviceTraceRepository = adviceTraceRepository;
     }
 
     @Transactional
     public AnalyzeResponse analyze(String gameId, MultipartFile image) {
+        long start = System.currentTimeMillis();
         int turnIndex = gameSessionRepository.nextTurnIndex(gameId);
         Optional<GameState> previousState = turnStateRepository.findLatestByGameId(gameId);
         Optional<GameMemory> previousMemory = memorySummaryRepository.findLatestByGameId(gameId);
@@ -93,6 +98,24 @@ public class AnalyzeService {
         StructuredAdvice validatedAdvice = structuredAdviceValidator.validateOrFallback(
                 adviceComposer.compose(currentState, diff, memory, chunks)
         );
+        boolean lowConfidence = currentState.stateConfidence() < 0.68;
+        if (lowConfidence) {
+            validatedAdvice = new StructuredAdvice(
+                    "识别置信度偏低，已切换保守策略。",
+                    "优先稳血与经济平衡",
+                    java.util.List.of(
+                            "减少高风险转型，先补当回合可见战力。",
+                            "保留经济弹性，下一回合根据更清晰信息再决策。"
+                    ),
+                    java.util.List.of(
+                            "当前状态置信度低于阈值(0.68)。",
+                            diff.summary()
+                    ),
+                    java.util.List.of("若继续掉血，可能快速进入淘汰区间。"),
+                    java.util.List.of("视觉识别置信度较低，建议人工确认关键信息。"),
+                    Math.min(validatedAdvice.confidence(), 0.55)
+            );
+        }
 
         AnalyzeResponse response = new AnalyzeResponse(
                 gameId,
@@ -106,6 +129,13 @@ public class AnalyzeService {
                 validatedAdvice.confidence()
         );
         adviceTraceRepository.save(gameId, turnIndex, response);
+        qualityMetricsService.recordAnalyze(
+                gameId,
+                currentState,
+                validatedAdvice,
+                System.currentTimeMillis() - start,
+                lowConfidence
+        );
         return response;
     }
 }
