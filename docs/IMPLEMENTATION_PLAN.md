@@ -18,7 +18,13 @@
   - 同一 `gameId` 连续上传会自动递增 `turnIndex` 并基于上一回合计算 `diff`
   - 已提供 `GET /api/v1/games/{gameId}/diffs` 查询回合差分
   - 已补充连续回合测试并通过
-- 下一步：进入 M2（RAG + 结构化建议）
+- M2 已完成：
+  - 已接入 RAG 链路：`QueryPlanner -> KnowledgeRetriever(Qdrant + fallback) -> RetrievalTrace`
+  - 已实现 `retrieval_trace` 持久化与查询接口 `GET /api/v1/games/{gameId}/retrievals`
+  - 已增加结构化建议约束：`StructuredAdvice` + `StructuredAdviceValidator`
+  - `analyze` 已按结构化对象生成并校验后返回
+  - 测试通过，确认连续回合时检索轨迹可落库并可查询
+- 下一步：进入 M3（可观测与回放）
 
 ---
 

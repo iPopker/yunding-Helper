@@ -57,6 +57,7 @@ class JccHelperApplicationTests {
                 .andExpect(jsonPath("$.turnIndex").value(1))
                 .andExpect(jsonPath("$.summary", notNullValue()))
                 .andExpect(jsonPath("$.actions[0]", notNullValue()))
+                .andExpect(jsonPath("$.reasons[0]", notNullValue()))
                 .andExpect(header().exists("X-Trace-Id"));
     }
 
@@ -88,5 +89,11 @@ class JccHelperApplicationTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].toTurn").value(1))
                 .andExpect(jsonPath("$[1].toTurn").value(2));
+
+        mockMvc.perform(get("/api/v1/games/{gameId}/retrievals", gameId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].turnIndex").value(1))
+                .andExpect(jsonPath("$[1].turnIndex").value(2))
+                .andExpect(jsonPath("$[0].queryText", notNullValue()));
     }
 }
