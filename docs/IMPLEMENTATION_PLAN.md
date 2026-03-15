@@ -12,7 +12,13 @@
   - 已提供 `POST /api/v1/analyze`（mock）
   - 已接入请求级 `traceId`（日志 MDC + 响应头）
   - 已补充基础接口测试并通过
-- 下一步：进入 M1（状态链路 MVP）
+- M1 已完成：
+  - 已建立 `V1__init_m1_tables.sql`，覆盖 `game_session/turn_state/state_diff/memory_summary/retrieval_trace/advice_trace`
+  - `analyze` 链路已实现 `Observation -> GameState -> StateDiff -> GameMemory` 并持久化
+  - 同一 `gameId` 连续上传会自动递增 `turnIndex` 并基于上一回合计算 `diff`
+  - 已提供 `GET /api/v1/games/{gameId}/diffs` 查询回合差分
+  - 已补充连续回合测试并通过
+- 下一步：进入 M2（RAG + 结构化建议）
 
 ---
 
