@@ -1,3 +1,27 @@
 spring:
   application:
     name: jccHelper
+  datasource:
+    url: "jdbc:sqlite:./data/jcc-helper.db"
+    driver-class-name: org.sqlite.JDBC
+  jooq:
+    sql-dialect: SQLITE
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+qdrant:
+  host: localhost
+  port: 6333
+  collection: tft_knowledge
+
+logging:
+  pattern:
+    level: "%5p [traceId:%X{traceId:-}]"
